@@ -173,6 +173,31 @@ void cmd_clear(struct State *state, xmpp_stanza_t *const orig, const char *comma
     }
 }
 
+void cmd_set_backlight(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+    static const char* usage = "usage: set backlight POWER\nPOWER must be a number between 0 and 255 inclusively, with 255 meaning highest power available.";
+
+    char *nextarg;
+    if (!command_args) {
+        reply_text(&state->xmpp_state, orig, usage);
+        return;
+    }
+    long power = strtol(command_args, &nextarg, 10);
+    if (nextarg == command_args) {
+        reply_text(&state->xmpp_state, orig, "%s\nnot a number", usage);
+        return;
+    }
+    if (power < 0 || power > 255) {
+        reply_text(&state->xmpp_state, orig, "%s\nPOWER out of bounds (0..255)", usage);
+        return;
+    }
+
+    int err = display_set_backlight_power(state, power);
+    if (err != 0) {
+        reply_text(&state->xmpp_state, orig, "write failed: %d", err);
+    }
+
+}
+
 void cmd_list(struct State *state, xmpp_stanza_t *const orig, const char *command_args);
 
 const struct Command commands[] = {
@@ -184,6 +209,7 @@ const struct Command commands[] = {
     {"echo", cmd_echo},
     {"clear", cmd_clear},
     {"list", cmd_list},
+    {"set backlight", cmd_set_backlight},
     {NULL, NULL},
     //~ {"clear", cmd_clear},
     //~ {"echo ", cmd_echo},

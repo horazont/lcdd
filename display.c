@@ -54,6 +54,16 @@ int display_redraw_page(struct State *state) {
     return display_write_raw(state, page, PAGE_SIZE);
 }
 
+int display_set_backlight_power(struct State *state, unsigned char power) {
+    unsigned char cmd[2] = "\x7c\x80";
+    unsigned int power_int = (power * 30) / 255;
+    if (power_int > 29) {
+        power_int = 29;
+    }
+    cmd[1] = 0x80 + (unsigned char)power_int;
+    return display_write_raw(state, cmd, 2);
+}
+
 int display_write_raw(struct State *state, const void *buf, size_t len) {
     int err = display_open(state);
     if (err != 0) {

@@ -13,6 +13,16 @@
 int display_open(struct State *state);
 
 /**
+ * Set the backlight power of the display.
+ *
+ * Accepts a value from 0 to 255 to indicate the desired power. This is
+ * re-mapped to the levels supported by the device.
+ *
+ * Returns 0 on success, the errno which occured during write otherwise.
+ */
+int display_set_backlight_power(struct State *state, unsigned char power);
+
+/**
  * Clear the display using a raw code.
  */
 int display_clear(struct State *state);
