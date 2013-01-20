@@ -225,11 +225,6 @@ const struct Command commands[] = {
     {"list", cmd_list},
     {"set backlight", cmd_set_backlight},
     {NULL, NULL},
-    //~ {"clear", cmd_clear},
-    //~ {"echo ", cmd_echo},
-    //~ {"set brightness ", cmd_set_brightness},
-    //~ {"hex ", cmd_hex},
-    //~ {"get resource use", cmd_get_resource_use}
 };
 
 void cmd_list(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
