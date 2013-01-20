@@ -61,7 +61,7 @@ void cmd_update_page(struct State *state, xmpp_stanza_t *const orig, const char 
     }
 
     unsigned char *page = state->display_state.pages[page_index];
-    memset(page, 0, PAGE_SIZE);
+    display_clear_page(state, page_index);
     memmove(page, decoded, pagelen);
 
     reply_text(&state->xmpp_state, orig, "%d bytes written to page", pagelen);

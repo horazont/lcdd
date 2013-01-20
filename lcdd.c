@@ -334,6 +334,10 @@ int main(int argc, char **argv) {
     state.serial_state.path = config.serial_file;
     state.display_state.page_cycling = 1;
 
+    for (int i = 0; i < PAGE_COUNT; i++) {
+        display_clear_page(&state, i);
+    }
+
     xmpp_initialize();
 
     while (1) {

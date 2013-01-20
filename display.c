@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <termios.h>
+#include <string.h>
 
 int display_open(struct State *state) {
     if (state->serial_state.fd >= 0) {
@@ -37,6 +38,10 @@ int display_clear(struct State *state) {
     static const char *clearcmd = "\xfe\x01";
     static const unsigned int cmdlen = 2;
     return display_write_raw(state, clearcmd, cmdlen);
+}
+
+void display_clear_page(struct State *state, int page_index) {
+    memset(state->display_state.pages[page_index], ' ', PAGE_SIZE);
 }
 
 int display_redraw_page(struct State *state) {

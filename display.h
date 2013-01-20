@@ -18,6 +18,13 @@ int display_open(struct State *state);
 int display_clear(struct State *state);
 
 /**
+ * Clear the buffer of a page by filling it with spaces.
+ *
+ * This will not update the display, hence there is no return value.
+ */
+void display_clear_page(struct State *state, int page_index);
+
+/**
  * Push the current pages contents to the display. Can be used to
  * overdraw anything written by display_write_raw or cycle pages.
  */
