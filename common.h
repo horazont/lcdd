@@ -26,6 +26,8 @@ struct DisplayState {
     int curr_page;
     unsigned char pages[PAGE_COUNT][PAGE_SIZE];
     int page_cycling;
+    xmpp_timed_handler page_cycle_handler;
+    unsigned long page_cycle_interval;
 };
 
 struct State {

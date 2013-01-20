@@ -96,6 +96,20 @@ void cmd_set_page_cycling(struct State *state, xmpp_stanza_t *const orig, const 
         return;
     }
 
+    if ((state->display_state.page_cycling != 0) ^ (enable != 0)) {
+        // state change
+        if (enable) {
+            xmpp_timed_handler_add(
+                state->xmpp_state.conn,
+                state->display_state.page_cycle_handler,
+                state->display_state.page_cycle_interval,
+                state);
+        } else {
+            xmpp_timed_handler_delete(
+                state->xmpp_state.conn,
+                state->display_state.page_cycle_handler);
+        }
+    }
     state->display_state.page_cycling = enable;
 }
 

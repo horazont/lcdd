@@ -31,6 +31,7 @@ static const struct {
     unsigned long ping_timeout_interval;
     unsigned long reconnect_interval;
     unsigned long device_check_interval;
+    unsigned long page_cycle_interval;
 
     char *authorized_jids[];
 
@@ -47,7 +48,8 @@ static const struct {
     ping_interval: 15000,
     ping_timeout_interval: 5000,
     reconnect_interval: 15,
-    device_check_interval: 5000
+    device_check_interval: 5000,
+    page_cycle_interval: 5000
 };
 
 /** Authorization */
@@ -129,6 +131,13 @@ int handle_ping_timeout(xmpp_conn_t *const conn, void *const userdata) {
     state->ping_pending = 0;
 
     return 0;
+}
+
+int handle_page_cycle(xmpp_conn_t *const conn, void *const userdata) {
+    struct State *state = (struct State*)userdata;
+    state->display_state.curr_page = (state->display_state.curr_page + 1) % PAGE_COUNT;
+    display_redraw_page(state);
+    return 1;
 }
 
 /** XMPP stanza handlers */
@@ -270,7 +279,7 @@ void conn_state_changed(xmpp_conn_t * const conn,
     xmpp_stream_error_t * const stream_error,
     void * const userdata)
 {
-    struct XMPPState *state = &((struct State*)userdata)->xmpp_state;
+    struct State *state = (struct State*)userdata;
 
     switch (status) {
     case XMPP_CONN_CONNECT:
@@ -303,8 +312,16 @@ void conn_state_changed(xmpp_conn_t * const conn,
             config.ping_interval,
             userdata
         );
+        if (state->display_state.page_cycling) {
+            xmpp_timed_handler_add(
+                conn,
+                state->display_state.page_cycle_handler,
+                state->display_state.page_cycle_interval,
+                userdata
+            );
+        }
 
-        state->available = -1;
+        state->xmpp_state.available = -1;
         check_device((struct State*)userdata);
         break;
     case XMPP_CONN_DISCONNECT:
@@ -333,6 +350,8 @@ int main(int argc, char **argv) {
     state.serial_state.fd = -1;
     state.serial_state.path = config.serial_file;
     state.display_state.page_cycling = 1;
+    state.display_state.page_cycle_handler = handle_page_cycle;
+    state.display_state.page_cycle_interval = config.page_cycle_interval;
 
     for (int i = 0; i < PAGE_COUNT; i++) {
         display_clear_page(&state, i);
