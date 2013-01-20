@@ -25,7 +25,6 @@ struct SerialState {
 struct DisplayState {
     int curr_page;
     unsigned char pages[PAGE_COUNT][PAGE_SIZE];
-    unsigned char framebuffer[PAGE_SIZE];
     int page_cycling;
 };
 
