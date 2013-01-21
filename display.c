@@ -11,11 +11,11 @@ int display_open(struct State *state) {
         return 0;
     }
 
-    if (!state->serial_state.path) {
+    if (!state->config.serial_file) {
         return -1;
     }
 
-    int fd = open(state->serial_state.path, O_RDWR | O_NOCTTY | O_NDELAY);
+    int fd = open(state->config.serial_file, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd < 0) {
         state->serial_state.fd = -1;
         return errno;
@@ -75,6 +75,8 @@ int display_write_raw(struct State *state, const void *buf, size_t len) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             written += write(state->serial_state.fd, buf, len);
         } else {
+            close(state->serial_state.fd);
+            state->serial_state.fd = -1;
             return errno;
         }
     }

@@ -18,7 +18,6 @@ struct XMPPState {
 };
 
 struct SerialState {
-    const char *path;
     int fd;
 };
 
@@ -30,10 +29,19 @@ struct DisplayState {
     unsigned long page_cycle_interval;
 };
 
+struct Config {
+    char *jid;
+    char *pass;
+    char *ping_peer;
+
+    char *serial_file;
+};
+
 struct State {
     struct XMPPState xmpp_state;
     struct SerialState serial_state;
     struct DisplayState display_state;
+    struct Config config;
 
     int terminated;
 };

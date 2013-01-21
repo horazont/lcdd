@@ -7,10 +7,12 @@
 #include <stdint.h>
 #include <signal.h>
 #include <assert.h>
+#include <errno.h>
 
 #include "couplet.h"
 
 #include "common.h"
+#include "config.h"
 #include "utils.h"
 #include "xmpp-utils.h"
 #include "commands.h"
@@ -21,11 +23,7 @@ static const char *ping_ns = "urn:xmpp:ping";
 /**********************************************************************/
 
 static const struct {
-    char *jid;
-    char *pass;
-    char *ping_peer;
-
-    char *serial_file;
+    char *config_file;
 
     unsigned long ping_interval;
     unsigned long ping_timeout_interval;
@@ -35,11 +33,8 @@ static const struct {
 
     char *authorized_jids[];
 
-} config = {
-    jid: "lcd@hub.sotecware.net/fritzbox-home",
-    pass: "E+Uh4GHgjyaO6Tdi1d60Emd71YVihIf0yDiBnhyDD1ESguiV",
-    ping_peer: "hub.sotecware.net",
-    serial_file: "/dev/ttyUSB0",
+} static_config = {
+    config_file: "cfg.xml",
     authorized_jids: {
         "jonas@zombofant.net/",
         "dvbbot@hub.sotecware.net/",
@@ -56,7 +51,7 @@ static const struct {
 
 int is_authorized(const char *jid)
 {
-    for (   char *const*authed_jid = &config.authorized_jids[0];
+    for (   char *const*authed_jid = &static_config.authorized_jids[0];
             *authed_jid != NULL;
             authed_jid++) {
         if (strncmp(jid, *authed_jid, strlen(*authed_jid)) == 0) {
@@ -89,19 +84,19 @@ int handle_ping_timeout(xmpp_conn_t *const conn, void *const userdata);
 int handle_ping_reply(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
 
 int handle_send_ping(xmpp_conn_t *const conn, void *const userdata) {
-    struct XMPPState *state = &((struct State*)userdata)->xmpp_state;
-    assert(!state->ping_pending);
+    struct State *state = (struct State*)userdata;
+    assert(!state->xmpp_state.ping_pending);
 
     static char pingidbuf[127];
 
-    xmpp_ctx_t *ctx = state->ctx;
+    xmpp_ctx_t *ctx = state->xmpp_state.ctx;
 
     memset(pingidbuf, 0, 127);
-    sprintf(pingidbuf, "ping%d", state->next_ping_id++);
+    sprintf(pingidbuf, "ping%d", state->xmpp_state.next_ping_id++);
 
     xmpp_stanza_t *iq_stanza = iq(ctx,
         "get",
-        config.ping_peer,
+        state->config.ping_peer,
         pingidbuf
     );
     xmpp_stanza_t *ping = xmpp_stanza_new(ctx);
@@ -110,9 +105,9 @@ int handle_send_ping(xmpp_conn_t *const conn, void *const userdata) {
     xmpp_stanza_add_child(iq_stanza, ping);
     xmpp_stanza_release(ping);
 
-    state->ping_pending = 1;
+    state->xmpp_state.ping_pending = 1;
     xmpp_id_handler_add(conn, handle_ping_reply, pingidbuf, userdata);
-    xmpp_timed_handler_add(conn, handle_ping_timeout, config.ping_timeout_interval, userdata);
+    xmpp_timed_handler_add(conn, handle_ping_timeout, static_config.ping_timeout_interval, userdata);
 
     xmpp_send(conn, iq_stanza);
     xmpp_stanza_release(iq_stanza);
@@ -274,14 +269,14 @@ int handle_ping_reply(xmpp_conn_t *const conn,
     xmpp_stanza_t *const stanza,
     void *const userdata)
 {
-    struct XMPPState *state = &((struct State*)userdata)->xmpp_state;
-    if (!state->ping_pending) {
+    struct State *state = (struct State*)userdata;
+    if (!state->xmpp_state.ping_pending) {
         return 0;
     }
 
-    state->ping_pending = 0;
+    state->xmpp_state.ping_pending = 0;
     xmpp_timed_handler_delete(conn, handle_ping_timeout);
-    xmpp_timed_handler_add(conn, handle_send_ping, config.ping_interval, userdata);
+    xmpp_timed_handler_add(conn, handle_send_ping, static_config.ping_interval, userdata);
     return 0;
 }
 
@@ -318,13 +313,19 @@ void conn_state_changed(xmpp_conn_t * const conn,
         xmpp_timed_handler_add(
             conn,
             handle_device_check,
-            config.device_check_interval,
+            static_config.device_check_interval,
             userdata
         );
         xmpp_timed_handler_add(
             conn,
             handle_send_ping,
-            config.ping_interval,
+            static_config.ping_interval,
+            userdata
+        );
+        xmpp_timed_handler_add(
+            conn,
+            handle_check_signals,
+            1000,
             userdata
          );
         xmpp_timed_handler_add(
@@ -361,6 +362,14 @@ void handle_sigint(int signum)
     *terminated = 1;
 }
 
+void assert_config(char *ptr, const char *name)
+{
+    if (!ptr) {
+        fprintf(stderr, "ERROR: config key %s not found\n", name);
+        exit(2);
+    }
+}
+
 int main(int argc, char **argv) {
     struct State state;
     terminated = &state.terminated;
@@ -369,12 +378,27 @@ int main(int argc, char **argv) {
     signal(SIGTERM, handle_sigint);
 
     memset(&state, 0, sizeof(struct State));
+    config_init(&state.config);
+
+    int err = config_load(static_config.config_file, &state.config);
+    if (err != 0) {
+        int error_number = errno;
+        fprintf(stderr, "ERROR: could not load config (%d:%d)\n", err, error_number);
+        exit(2);
+    };
+
+    assert_config(state.config.jid, "jid");
+    assert_config(state.config.pass, "pass");
+    assert_config(state.config.ping_peer, "ping-peer");
+    assert_config(state.config.serial_file, "device");
+
+    printf("%s\n", state.config.jid);
+    printf("%s\n", state.config.pass);
 
     state.serial_state.fd = -1;
-    state.serial_state.path = config.serial_file;
     state.display_state.page_cycling = 1;
     state.display_state.page_cycle_handler = handle_page_cycle;
-    state.display_state.page_cycle_interval = config.page_cycle_interval;
+    state.display_state.page_cycle_interval = static_config.page_cycle_interval;
 
     for (int i = 0; i < PAGE_COUNT; i++) {
         display_clear_page(&state, i);
@@ -394,8 +418,8 @@ int main(int argc, char **argv) {
         state.xmpp_state.conn = xmpp_conn_new(ctx);
         xmpp_conn_t *conn = state.xmpp_state.conn;
 
-        xmpp_conn_set_jid(conn, config.jid);
-        xmpp_conn_set_pass(conn, config.pass);
+        xmpp_conn_set_jid(conn, state.config.jid);
+        xmpp_conn_set_pass(conn, state.config.pass);
 
         debug_msg("connecting\n");
         xmpp_connect_client(conn, NULL, 0, conn_state_changed, &state);
@@ -414,7 +438,7 @@ int main(int argc, char **argv) {
             break;
         }
         debug_msg("reconnecting soon\n");
-        sleep(config.reconnect_interval);
+        sleep(static_config.reconnect_interval);
         if (state.terminated) {
             break;
         }
@@ -422,6 +446,7 @@ int main(int argc, char **argv) {
 
     xmpp_ctx_free(ctx);
     xmpp_shutdown();
+    config_burn(&state.config);
 
     return 0;
 }

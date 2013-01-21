@@ -47,3 +47,9 @@ objs/display-local.o: display.c display.h utils.h common.h
 objs/display.o: display.c display.h utils.h common.h
 	$(FBCC) -c -o $@ display.c
 
+objs/config-local.o: config.c config.h common.h
+	$(LOCC) -c -o $@ config.c
+
+objs/config.o: config.c config.h common.h
+	$(FBCC) -c -o $@ config.c
+
