@@ -1,27 +1,27 @@
-LIBS_STROPHE_FB=../libstrophe/libstrophe.a
-LIBS_STROPHE_LOCAL=../libstrophe-local/libstrophe.a
+LIBS_COUPLET_FB=../libcouplet/.libs/libcouplet.a
+LIBS_COUPLET_LOCAL=../libcouplet-local/.libs/libcouplet.a
 
-LIBS_FRITZBOX=$(LIBS_STROPHE_FB) ../fritzbox-libs/libssl.so ../fritzbox-libs/libcrypto.so.1 ../fritzbox-libs/libc.so ../fritzbox-libs/libexpat.so
+LIBS_FRITZBOX=$(LIBS_COUPLET_FB) ../fritzbox-libs/libssl.so ../fritzbox-libs/libcrypto.so.1 ../fritzbox-libs/libc.so ../fritzbox-libs/libexpat.so
 
 LD_LOCAL=
 
-CFLAGS_STROPHE_FB=-I../libstrophe/
-CFLAGS_STROPHE_LOCAL=-I../libstrophe-local/
+CFLAGS_COUPLET_FB=-I../libcouplet/
+CFLAGS_COUPLET_LOCAL=-I../libcouplet-local/
 
 CFLAGS=-Wall -Werror -std=gnu99
 
-FBCC=mips-linux-gcc $(CFLAGS_STROPHE_FB) $(CFLAGS) -Os
-LOCC=gcc $(CFLAGS_STROPHE_LOCAL) $(CFLAGS) -g -O2
+FBCC=mips-linux-gcc $(CFLAGS_COUPLET_FB) $(CFLAGS) -Os
+LOCC=gcc $(CFLAGS_COUPLET_LOCAL) $(CFLAGS) -g -O2
 
-LOCAL_OBJS=objs/utils-local.o objs/xmpp-utils-local.o objs/commands-local.o objs/display-local.o
-FB_OBJS=objs/utils.o objs/xmpp-utils.o objs/commands.o objs/display.o
+LOCAL_OBJS=objs/utils-local.o objs/xmpp-utils-local.o objs/commands-local.o objs/display-local.o objs/config-local.o
+FB_OBJS=objs/utils.o objs/xmpp-utils.o objs/commands.o objs/display.o objs/config.o
 
 
 lcdd-local: lcdd.c $(LOCAL_OBJS)
-	$(LOCC) $(CFLAGS_STROPHE_LOCAL) -lssl -lcrypto -lexpat -lresolv -o lcdd-local lcdd.c $(LOCAL_OBJS) $(LIBS_STROPHE_LOCAL)
+	$(LOCC) $(CFLAGS_COUPLET_LOCAL) -lssl -lcrypto -lexpat -lresolv -lpthread -o lcdd-local lcdd.c $(LOCAL_OBJS) $(LIBS_COUPLET_LOCAL)
 
 lcdd: lcdd.c $(FB_OBJS)
-	$(FBCC) -o lcdd lcdd.c $(FB_OBJS) $(CFLAGS_STROPHE_FB) $(LIBS_FRITZBOX)
+	$(FBCC) -o lcdd lcdd.c $(FB_OBJS) $(CFLAGS_COUPLET_FB) $(LIBS_FRITZBOX)
 
 objs/utils-local.o: utils.c utils.h common.h
 	$(LOCC) -c -o $@ utils.c

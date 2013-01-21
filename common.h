@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include "strophe.h"
+#include "couplet.h"
 
 #define PAGE_COUNT 3
 #define PAGE_SIZE 20*4
@@ -34,6 +34,8 @@ struct State {
     struct XMPPState xmpp_state;
     struct SerialState serial_state;
     struct DisplayState display_state;
+
+    int terminated;
 };
 
 #endif

@@ -8,7 +8,7 @@
 #include <signal.h>
 #include <assert.h>
 
-#include "strophe.h"
+#include "couplet.h"
 
 #include "common.h"
 #include "utils.h"
@@ -127,7 +127,7 @@ int handle_ping_timeout(xmpp_conn_t *const conn, void *const userdata) {
     }
 
     debug_msg("ping timeout\n");
-    state->running = 0;
+    xmpp_disconnect(conn);
     state->ping_pending = 0;
 
     return 0;
@@ -143,6 +143,16 @@ int handle_page_cycle(xmpp_conn_t *const conn, void *const userdata) {
         state->display_state.page_cycle_interval,
         userdata);
     return 1;
+}
+
+int handle_check_signals(xmpp_conn_t *const conn, void *const userdata) {
+    struct State *state = (struct State*)userdata;
+    if (state->terminated) {
+        xmpp_disconnect(conn);
+        return 0;
+    } else {
+        return 1;
+    }
 }
 
 /** XMPP stanza handlers */
@@ -316,6 +326,12 @@ void conn_state_changed(xmpp_conn_t * const conn,
             handle_send_ping,
             config.ping_interval,
             userdata
+         );
+        xmpp_timed_handler_add(
+            conn,
+            handle_check_signals,
+            1000,
+            userdata
         );
         if (state->display_state.page_cycling) {
             xmpp_timed_handler_add(
@@ -331,21 +347,23 @@ void conn_state_changed(xmpp_conn_t * const conn,
         break;
     case XMPP_CONN_DISCONNECT:
     case XMPP_CONN_FAIL:
+        xmpp_stop(state->xmpp_state.ctx);
         break;
     default:
         break;
     };
 }
 
-int terminated = 0;
+int *terminated = 0;
 
 void handle_sigint(int signum)
 {
-    terminated = 1;
+    *terminated = 1;
 }
 
 int main(int argc, char **argv) {
     struct State state;
+    terminated = &state.terminated;
 
     signal(SIGINT, handle_sigint);
     signal(SIGTERM, handle_sigint);
@@ -364,12 +382,14 @@ int main(int argc, char **argv) {
 
     xmpp_initialize();
 
+    xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_DEBUG);
+
+    xmpp_ctx_t *ctx = xmpp_ctx_new(NULL, log);
+
     while (1) {
         memset(&state.xmpp_state, 0, sizeof(struct XMPPState));
+        state.xmpp_state.ctx = ctx;
         state.xmpp_state.running = 1;
-
-        state.xmpp_state.ctx = xmpp_ctx_new(NULL, NULL);
-        xmpp_ctx_t *ctx = state.xmpp_state.ctx;
 
         state.xmpp_state.conn = xmpp_conn_new(ctx);
         xmpp_conn_t *conn = state.xmpp_state.conn;
@@ -377,27 +397,30 @@ int main(int argc, char **argv) {
         xmpp_conn_set_jid(conn, config.jid);
         xmpp_conn_set_pass(conn, config.pass);
 
+        debug_msg("connecting\n");
         xmpp_connect_client(conn, NULL, 0, conn_state_changed, &state);
 
-        while (!terminated && state.xmpp_state.running) {
-            xmpp_run_once(ctx, 1000);
-        }
+        debug_msg("entering main loop\n");
+        xmpp_resume(ctx);
 
         if (state.xmpp_state.running) {
             xmpp_disconnect(conn);
         }
 
         xmpp_conn_release(conn);
-        xmpp_ctx_free(ctx);
 
         // reset_serial(&state.serial_state);
-        if (terminated) {
+        if (state.terminated) {
             break;
         }
         debug_msg("reconnecting soon\n");
         sleep(config.reconnect_interval);
+        if (state.terminated) {
+            break;
+        }
     };
 
+    xmpp_ctx_free(ctx);
     xmpp_shutdown();
 
     return 0;
