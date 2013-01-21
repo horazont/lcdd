@@ -181,6 +181,12 @@ void cmd_clear(struct State *state, xmpp_stanza_t *const orig, const char *comma
     }
 }
 
+void cmd_clear_all(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+    for (int i = 0; i < PAGE_COUNT; i++) {
+        display_clear_page(state, i);
+    }
+}
+
 void cmd_set_backlight(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
     static const char* usage = "usage: set backlight POWER\nPOWER must be a number between 0 and 255 inclusively, with 255 meaning highest power available.";
 
@@ -206,6 +212,28 @@ void cmd_set_backlight(struct State *state, xmpp_stanza_t *const orig, const cha
 
 }
 
+void cmd_set_page_cycle_interval(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+    static const char* usage = "usage: set page cycle interval MILLISECS";
+
+    char *nextarg;
+    if (!command_args) {
+        reply_text(&state->xmpp_state, orig, usage);
+        return;
+    }
+    long interval = strtol(command_args, &nextarg, 10);
+    if (nextarg == command_args) {
+        reply_text(&state->xmpp_state, orig, "%s\nnot a number", usage);
+        return;
+    }
+    if (interval < 100) {
+        reply_text(&state->xmpp_state, orig, "%s\nMILLISECS out of bounds (must be >= 100)", usage);
+        return;
+    }
+
+    state->display_state.page_cycle_interval = interval;
+
+}
+
 void cmd_list(struct State *state, xmpp_stanza_t *const orig, const char *command_args);
 
 const struct Command commands[] = {
@@ -213,8 +241,10 @@ const struct Command commands[] = {
     {"update page", cmd_update_page},
     {"get resource use", cmd_get_resource_use},
     {"set page cycling", cmd_set_page_cycling},
+    {"set page cycle interval", cmd_set_page_cycle_interval},
     {"raw", cmd_raw},
     {"echo", cmd_echo},
+    {"clear all", cmd_clear_all},
     {"clear", cmd_clear},
     {"list", cmd_list},
     {"set backlight", cmd_set_backlight},
