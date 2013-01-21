@@ -63,8 +63,6 @@ void cmd_update_page(struct State *state, xmpp_stanza_t *const orig, const char 
     unsigned char *page = state->display_state.pages[page_index];
     display_clear_page(state, page_index);
     memmove(page, decoded, pagelen);
-
-    reply_text(&state->xmpp_state, orig, "%d bytes written to page", pagelen);
 }
 
 void cmd_get_resource_use(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
@@ -161,8 +159,6 @@ void cmd_raw(struct State *state, xmpp_stanza_t *const orig, const char *command
     int err = display_write_raw(state, decoded, pagelen);
     if (err != 0) {
         reply_text(&state->xmpp_state, orig, "write failed: %d", err);
-    } else {
-        reply_text(&state->xmpp_state, orig, "sent %d bytes", pagelen);
     }
 }
 
@@ -175,8 +171,6 @@ void cmd_echo(struct State *state, xmpp_stanza_t *const orig, const char *comman
     int err = display_write_raw(state, command_args, arglen);
     if (err != 0) {
         reply_text(&state->xmpp_state, orig, "write failed: %d", err);
-    } else {
-        reply_text(&state->xmpp_state, orig, "sent %d bytes", arglen);
     }
 }
 
