@@ -1,5 +1,7 @@
 #include "display.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -7,18 +9,32 @@
 #include <string.h>
 
 int display_open(struct State *state) {
+    const char *const path = state->config.serial_file;
+
+    if (!path) {
+        return -1;
+    }
+
+    struct stat stat_results;
+
+    memset(&stat_results, 0, sizeof(struct stat));
+    if (stat(path, &stat_results) != 0) {
+        display_close(state);
+        return -1;
+    }
+    if (!S_ISCHR(stat_results.st_mode)) {
+        display_close(state);
+        return -2;
+    }
+
     if (state->serial_state.fd >= 0) {
         return 0;
     }
 
-    if (!state->config.serial_file) {
-        return -1;
-    }
-
-    int fd = open(state->config.serial_file, O_RDWR | O_NOCTTY | O_NDELAY);
+    int fd = open(path, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd < 0) {
         state->serial_state.fd = -1;
-        return errno;
+        return -3;
     } else {
         struct termios port_settings;
         cfsetispeed(&port_settings, B9600);
@@ -75,11 +91,17 @@ int display_write_raw(struct State *state, const void *buf, size_t len) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             written += write(state->serial_state.fd, buf, len);
         } else {
-            close(state->serial_state.fd);
-            state->serial_state.fd = -1;
+            display_close(state);
             return errno;
         }
     }
 
     return 0;
+}
+
+void display_close(struct State *state) {
+    if (state->serial_state.fd >= 0) {
+        close(state->serial_state.fd);
+    }
+    state->serial_state.fd = -1;
 }

@@ -344,6 +344,7 @@ void conn_state_changed(xmpp_conn_t * const conn,
         }
 
         state->xmpp_state.available = -1;
+        set_presence(&state->xmpp_state, 0, "initializing...");
         check_device((struct State*)userdata);
         break;
     case XMPP_CONN_DISCONNECT:
@@ -406,7 +407,7 @@ int main(int argc, char **argv) {
 
     xmpp_initialize();
 
-    xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_DEBUG);
+    xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_ERROR);
 
     xmpp_ctx_t *ctx = xmpp_ctx_new(NULL, log);
 
