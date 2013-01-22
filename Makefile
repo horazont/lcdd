@@ -1,7 +1,7 @@
 LIBS_COUPLET_FB=../libcouplet/.libs/libcouplet.a
 LIBS_COUPLET_LOCAL=../libcouplet-local/.libs/libcouplet.a
 
-LIBS_FRITZBOX=$(LIBS_COUPLET_FB) ../fritzbox-libs/libssl.so ../fritzbox-libs/libcrypto.so.1 ../fritzbox-libs/libc.so ../fritzbox-libs/libexpat.so
+LIBS_FRITZBOX=$(LIBS_COUPLET_FB) ../fritzbox-libs/libssl.so ../fritzbox-libs/libcrypto.so.1 ../fritzbox-libs/libc.so ../fritzbox-libs/libexpat.so ../fritzbox-libs/libpthread.so
 
 LD_LOCAL=
 
