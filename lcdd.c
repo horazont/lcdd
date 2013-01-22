@@ -42,7 +42,7 @@ static const struct {
     },
     ping_interval: 15000,
     ping_timeout_interval: 5000,
-    reconnect_interval: 15,
+    reconnect_interval: 60,
     device_check_interval: 5000,
     page_cycle_interval: 5000
 };
