@@ -356,10 +356,21 @@ void conn_state_changed(xmpp_conn_t * const conn,
     };
 }
 
-int *terminated = 0;
+int *terminated = 0, sighupd = 0;
+struct XMPPState *signal_state;
+
+void handle_sighup(int signum)
+{
+    fprintf(stderr, "SIGHUP received -- reconnecting\n");
+    if (signal_state->conn) {
+        xmpp_disconnect(signal_state->conn);
+    }
+    sighupd = 1;
+}
 
 void handle_sigint(int signum)
 {
+    fprintf(stderr, "SIGTERM/SIGINT received -- terminating\n");
     *terminated = 1;
 }
 
@@ -374,9 +385,11 @@ void assert_config(char *ptr, const char *name)
 int main(int argc, char **argv) {
     struct State state;
     terminated = &state.terminated;
+    signal_state = &state.xmpp_state;
 
     signal(SIGINT, handle_sigint);
     signal(SIGTERM, handle_sigint);
+    signal(SIGHUP, handle_sighup);
 
     memset(&state, 0, sizeof(struct State));
     config_init(&state.config);
@@ -438,10 +451,15 @@ int main(int argc, char **argv) {
         if (state.terminated) {
             break;
         }
-        debug_msg("reconnecting soon\n");
-        sleep(static_config.reconnect_interval);
-        if (state.terminated) {
-            break;
+        if (!sighupd) {
+            debug_msg("reconnecting soon\n");
+            sleep(static_config.reconnect_interval);
+            if (state.terminated) {
+                break;
+            }
+        } else {
+            sighupd = 0;
+            debug_msg("SIGHUP'd, reconnecting immediately\n");
         }
     };
 
