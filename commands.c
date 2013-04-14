@@ -267,6 +267,34 @@ void cmd_set_page_cycle_interval(struct State *state,
 
 }
 
+void cmd_read_sensors(struct State *state,
+                      xmpp_stanza_t *const orig,
+                      const char *command_args)
+{
+    int bufsize = 1024;
+    int offset = 0;
+    char *msg = malloc(1024);
+
+    for (int i = 0; i < SENSOR_COUNT; i++) {
+        msg = appendf(msg, &offset, &bufsize,
+                      "s%d", i);
+
+        struct SensorState *sensor = &state->sensors[i];
+        if (sensor->known) {
+            msg = appendf(msg, &offset, &bufsize,
+                          " v%d", sensor->value);
+        } else {
+            msg = appendf(msg, &offset, &bufsize,
+                          " ???");
+        }
+    }
+
+    reply_text(&state->xmpp_state,
+               orig,
+               "%s", msg);
+    free(msg);
+}
+
 void cmd_list(struct State *state, xmpp_stanza_t *const orig, const char *command_args);
 
 const struct Command commands[] = {
@@ -281,6 +309,7 @@ const struct Command commands[] = {
     {"clear", cmd_clear},
     {"list", cmd_list},
     {"set backlight", cmd_set_backlight},
+    {"read sensors", cmd_read_sensors},
     {NULL, NULL},
 };
 
