@@ -1,10 +1,13 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <stdint.h>
+
 #include "couplet.h"
 
 #define PAGE_COUNT 3
 #define PAGE_SIZE 20*4
+#define SENSOR_COUNT 1
 
 struct XMPPState {
     xmpp_conn_t *conn;
@@ -19,6 +22,12 @@ struct XMPPState {
 
 struct SerialState {
     int fd;
+};
+
+struct SensorState {
+    int known;
+    uint8_t addr[8];
+    int16_t value;
 };
 
 struct DisplayState {
@@ -42,6 +51,7 @@ struct State {
     struct SerialState serial_state;
     struct DisplayState display_state;
     struct Config config;
+    struct SensorState sensors[SENSOR_COUNT];
 
     int terminated;
 };
