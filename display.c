@@ -37,6 +37,7 @@ int display_open(struct State *state) {
         return -3;
     } else {
         struct termios port_settings;
+        memset(&port_settings, 0, sizeof(port_settings));
         cfsetispeed(&port_settings, B9600);
         cfsetospeed(&port_settings, B9600);
         port_settings.c_cflag &= ~PARENB;
