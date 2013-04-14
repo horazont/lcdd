@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <errno.h>
+#include <stdint.h>
 
 #include "couplet.h"
 
@@ -30,6 +32,7 @@ static const struct {
     unsigned long reconnect_interval;
     unsigned long device_check_interval;
     unsigned long page_cycle_interval;
+    unsigned long sensor_check_interval;
 
     char *authorized_jids[];
 
@@ -44,7 +47,8 @@ static const struct {
     ping_timeout_interval: 5000,
     reconnect_interval: 60,
     device_check_interval: 5000,
-    page_cycle_interval: 5000
+    page_cycle_interval: 5000,
+    sensor_check_interval: 1000
 };
 
 /** Authorization */
@@ -137,6 +141,35 @@ int handle_page_cycle(xmpp_conn_t *const conn, void *const userdata) {
         state->display_state.page_cycle_handler,
         state->display_state.page_cycle_interval,
         userdata);
+    return 1;
+}
+
+int handle_sensor_check(xmpp_conn_t *const conn, void *const userdata) {
+    struct State *state = (struct State*)userdata;
+    struct pollfd fd;
+    fd.fd = state->serial_state.fd;
+    fd.events = POLLIN;
+
+    while (poll(&fd, 1, 0) == 1) {
+        if ((fd.revents & POLLIN) == POLLIN) {
+            uint8_t sensor_id = 255;
+            uint8_t value[2];
+
+            read(fd.fd, &sensor_id, 1);
+            if (sensor_id >= SENSOR_COUNT) {
+                return 1;
+            }
+
+            read(fd.fd, state->sensors[sensor_id].addr, 8);
+            read(fd.fd, value, 2);
+
+            uint16_t value_int = 0;
+            value_int |= ((uint16_t)value[1] << 8) & 0xFF00;
+            value_int |= ((uint16_t)value[0]) & 0xFF;
+            state->sensors[sensor_id].known = 1;
+            state->sensors[sensor_id].value = (int16_t)value_int;
+        }
+    }
     return 1;
 }
 
@@ -327,11 +360,11 @@ void conn_state_changed(xmpp_conn_t * const conn,
             handle_check_signals,
             1000,
             userdata
-         );
+        );
         xmpp_timed_handler_add(
             conn,
-            handle_check_signals,
-            1000,
+            handle_sensor_check,
+            static_config.sensor_check_interval,
             userdata
         );
         if (state->display_state.page_cycling) {
