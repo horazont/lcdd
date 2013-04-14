@@ -21,6 +21,7 @@
 #include "display.h"
 
 static const char *ping_ns = "urn:xmpp:ping";
+static const char *sensor_ns = "http://xmpp.sotecware.net/xmlns/sensor";
 
 /**********************************************************************/
 
@@ -185,6 +186,79 @@ int handle_check_signals(xmpp_conn_t *const conn, void *const userdata) {
 
 /** XMPP stanza handlers */
 
+int handle_sensor_request(xmpp_conn_t *const conn,
+                          xmpp_stanza_t *const stanza,
+                          void *const userdata)
+{
+    struct State *state = (struct State*)userdata;
+    xmpp_ctx_t *const ctx = state->xmpp_state.ctx;
+
+    const char *from = xmpp_stanza_get_attribute(stanza, "from");
+    if (!is_authorized(from)) {
+        xmpp_stanza_t *error = iq_error(
+            ctx,
+            stanza,
+            "cancel",
+            "forbidden",
+            NULL
+            );
+        xmpp_send(conn, error);
+        xmpp_stanza_release(error);
+        return 1;
+    }
+
+    const char *type = xmpp_stanza_get_attribute(stanza, "type");
+    if (strcmp(type, "get") != 0) {
+        xmpp_stanza_t *error = iq_error(
+            ctx,
+            stanza,
+            "cancel",
+            "bad-request",
+            NULL
+            );
+        xmpp_send(conn, error);
+        xmpp_stanza_release(error);
+        return 1;
+    }
+
+    xmpp_stanza_t *response = iq(ctx, "result", from,
+                                 xmpp_stanza_get_attribute(stanza, "id"));
+    xmpp_stanza_t *query = xmpp_stanza_new(ctx);
+    xmpp_stanza_set_name(query, "query");
+    xmpp_stanza_set_ns(query, sensor_ns);
+
+    for (int i = 0; i < SENSOR_COUNT; i++) {
+        struct SensorState *sensor_state = &state->sensors[i];
+        if (!sensor_state->known) {
+            continue;
+        }
+
+        xmpp_stanza_t *sensor = xmpp_stanza_new(ctx);
+        xmpp_stanza_set_name(sensor, "sensor");
+        xmpp_stanza_set_ns(sensor, sensor_ns);
+
+        xmpp_stanza_set_attribute(sensor, "available", "true");
+        char *buf = awesomef("%d", sensor_state->value);
+        xmpp_stanza_set_attribute(sensor, "value", buf);
+        free(buf);
+
+        char addrbuf[17];
+        memset(addrbuf, 0, sizeof(addrbuf));
+        encode_hex(addrbuf, sensor_state->addr, 8);
+        xmpp_stanza_set_attribute(sensor, "serial", addrbuf);
+
+        xmpp_stanza_add_child(query, sensor);
+        xmpp_stanza_release(sensor);
+    }
+
+    xmpp_stanza_add_child(response, query);
+    xmpp_stanza_release(query);
+    xmpp_send(conn, response);
+    xmpp_stanza_release(response);
+
+    return 1;
+}
+
 int handle_version(xmpp_conn_t *const conn,
     xmpp_stanza_t *const stanza,
     void *const userdata)
@@ -333,6 +407,14 @@ void conn_state_changed(xmpp_conn_t * const conn,
             "jabber:iq:version",
             "iq",
             0,
+            userdata
+        );
+        xmpp_handler_add(
+            conn,
+            handle_sensor_request,
+            sensor_ns,
+            "iq",
+            "get",
             userdata
         );
         xmpp_handler_add(
