@@ -42,6 +42,7 @@ static const struct {
     authorized_jids: {
         "jonas@zombofant.net/",
         "dvbbot@hub.sotecware.net/",
+        "agent@hub.sotecware.net/",
         NULL
     },
     ping_interval: 15000,
@@ -136,6 +137,7 @@ int handle_ping_timeout(xmpp_conn_t *const conn, void *const userdata) {
 int handle_page_cycle(xmpp_conn_t *const conn, void *const userdata) {
     struct State *state = (struct State*)userdata;
     state->display_state.curr_page = (state->display_state.curr_page + 1) % PAGE_COUNT;
+    // check_device();
     display_redraw_page(state);
     xmpp_timed_handler_delete(conn, handle_page_cycle);
     xmpp_timed_handler_add(conn,
@@ -464,6 +466,7 @@ void conn_state_changed(xmpp_conn_t * const conn,
         break;
     case XMPP_CONN_DISCONNECT:
     case XMPP_CONN_FAIL:
+        debug_msg("disconnecting\n");
         xmpp_stop(state->xmpp_state.ctx);
         break;
     default:
@@ -555,6 +558,7 @@ int main(int argc, char **argv) {
 
         debug_msg("entering main loop\n");
         xmpp_resume(ctx);
+        debug_msg("exited main loop\n");
 
         if (state.xmpp_state.running) {
             xmpp_disconnect(conn);
