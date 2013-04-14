@@ -13,11 +13,17 @@
 #include "xmpp-utils.h"
 #include "display.h"
 
-void cmd_ping(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_ping(struct State *state,
+              xmpp_stanza_t *const orig,
+              const char *command_args)
+{
     reply_text(&state->xmpp_state, orig, "pong");
 }
 
-void cmd_update_page(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_update_page(struct State *state,
+                     xmpp_stanza_t *const orig,
+                     const char *command_args)
+{
     static const char* usage = "usage: update page PAGEINDEX HEX…";
 
     char *nextarg;
@@ -65,7 +71,10 @@ void cmd_update_page(struct State *state, xmpp_stanza_t *const orig, const char 
     memmove(page, decoded, pagelen);
 }
 
-void cmd_get_resource_use(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_get_resource_use(struct State *state,
+                          xmpp_stanza_t *const orig,
+                          const char *command_args)
+{
     struct rusage usage;
     memset(&usage, 0, sizeof(struct rusage));
     getrusage(RUSAGE_SELF, &usage);
@@ -80,7 +89,10 @@ void cmd_get_resource_use(struct State *state, xmpp_stanza_t *const orig, const 
     );
 }
 
-void cmd_set_page_cycling(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_set_page_cycling(struct State *state,
+                          xmpp_stanza_t *const orig,
+                          const char *command_args)
+{
     static const char* usage = "usage: set page cycling INT\nIf int is 0, page cycling is turned off";
 
     char *nextarg;
@@ -111,7 +123,10 @@ void cmd_set_page_cycling(struct State *state, xmpp_stanza_t *const orig, const 
     state->display_state.page_cycling = enable;
 }
 
-void cmd_show_page(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_show_page(struct State *state,
+                   xmpp_stanza_t *const orig,
+                   const char *command_args)
+{
     static const char* usage = "usage: show page PAGEINDEX";
 
     char *nextarg;
@@ -132,7 +147,10 @@ void cmd_show_page(struct State *state, xmpp_stanza_t *const orig, const char *c
     state->display_state.curr_page = page_index;
 }
 
-void cmd_raw(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_raw(struct State *state,
+             xmpp_stanza_t *const orig,
+             const char *command_args)
+{
     if (!command_args) {
         return;
     }
@@ -162,7 +180,10 @@ void cmd_raw(struct State *state, xmpp_stanza_t *const orig, const char *command
     }
 }
 
-void cmd_echo(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_echo(struct State *state,
+              xmpp_stanza_t *const orig,
+              const char *command_args)
+{
     if (!command_args) {
         return;
     }
@@ -174,20 +195,29 @@ void cmd_echo(struct State *state, xmpp_stanza_t *const orig, const char *comman
     }
 }
 
-void cmd_clear(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_clear(struct State *state,
+               xmpp_stanza_t *const orig,
+               const char *command_args)
+{
     int err = display_clear(state);
     if (err != 0) {
         reply_text(&state->xmpp_state, orig, "write failed: %d", err);
     }
 }
 
-void cmd_clear_all(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_clear_all(struct State *state,
+                   xmpp_stanza_t *const orig,
+                   const char *command_args)
+{
     for (int i = 0; i < PAGE_COUNT; i++) {
         display_clear_page(state, i);
     }
 }
 
-void cmd_set_backlight(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_set_backlight(struct State *state,
+                       xmpp_stanza_t *const orig,
+                       const char *command_args)
+{
     static const char* usage = "usage: set backlight POWER\nPOWER must be a number between 0 and 255 inclusively, with 255 meaning highest power available.";
 
     char *nextarg;
@@ -212,7 +242,10 @@ void cmd_set_backlight(struct State *state, xmpp_stanza_t *const orig, const cha
 
 }
 
-void cmd_set_page_cycle_interval(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_set_page_cycle_interval(struct State *state,
+                                 xmpp_stanza_t *const orig,
+                                 const char *command_args)
+{
     static const char* usage = "usage: set page cycle interval MILLISECS";
 
     char *nextarg;
@@ -251,7 +284,10 @@ const struct Command commands[] = {
     {NULL, NULL},
 };
 
-void cmd_list(struct State *state, xmpp_stanza_t *const orig, const char *command_args) {
+void cmd_list(struct State *state,
+              xmpp_stanza_t *const orig,
+              const char *command_args)
+{
     const struct Command *cmd = commands;
     for (; cmd->name != NULL; cmd++) {
         reply_text(&state->xmpp_state, orig, "%s", cmd->name);
