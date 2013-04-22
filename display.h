@@ -3,6 +3,10 @@
 
 #include "common.h"
 
+static const uint8_t DISPLAY_CMD_CLEAR = 0x00;
+static const uint8_t DISPLAY_CMD_WRITE_RAW = 0x01;
+static const uint8_t DISPLAY_CMD_WRITE_PAGE = 0x02;
+
 /**
  * Open the display serial port if neccessary.
  *
@@ -41,9 +45,10 @@ void display_clear_page(struct State *state, int page_index);
 int display_redraw_page(struct State *state);
 
 /**
- * Send *buf* to the display directly.
+ * Send the given text buffer to the display.
  */
-int display_write_raw(struct State *state, const void *buf, size_t len);
+int display_write_text(struct State *state, const uint8_t *buf,
+                       size_t len, uint8_t write_mode);
 
 /**
  * Close the display fd if it's open right now neccessary.

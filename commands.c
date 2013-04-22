@@ -174,7 +174,8 @@ void cmd_raw(struct State *state,
         return;
     }
 
-    int err = display_write_raw(state, decoded, pagelen);
+    int err = display_write_text(state, decoded,
+                                 pagelen, DISPLAY_CMD_WRITE_RAW);
     if (err != 0) {
         reply_text(&state->xmpp_state, orig, "write failed: %d", err);
     }
@@ -189,7 +190,8 @@ void cmd_echo(struct State *state,
     }
 
     int arglen = strlen(command_args);
-    int err = display_write_raw(state, command_args, arglen);
+    int err = display_write_text(state, (const uint8_t*)command_args,
+                                 arglen, DISPLAY_CMD_WRITE_RAW);
     if (err != 0) {
         reply_text(&state->xmpp_state, orig, "write failed: %d", err);
     }

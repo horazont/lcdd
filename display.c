@@ -7,6 +7,9 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <string.h>
+#include <stdlib.h>
+
+int display_write_raw(struct State *state, const void *buf, size_t len);
 
 int display_open(struct State *state) {
     const char *const path = state->config.serial_file;
@@ -52,9 +55,7 @@ int display_open(struct State *state) {
 }
 
 int display_clear(struct State *state) {
-    static const char *clearcmd = "\xfe\x01";
-    static const unsigned int cmdlen = 2;
-    return display_write_raw(state, clearcmd, cmdlen);
+    return display_write_raw(state, &DISPLAY_CMD_CLEAR, 1);
 }
 
 void display_clear_page(struct State *state, int page_index) {
@@ -68,17 +69,34 @@ int display_redraw_page(struct State *state) {
     }
 
     unsigned char *page = state->display_state.pages[state->display_state.curr_page];
-    return display_write_raw(state, page, PAGE_SIZE);
+    return display_write_text(state, page, PAGE_SIZE, DISPLAY_CMD_WRITE_PAGE);
 }
 
 int display_set_backlight_power(struct State *state, unsigned char power) {
-    unsigned char cmd[2] = "\x7c\x80";
-    unsigned int power_int = (power * 30) / 255;
-    if (power_int > 29) {
-        power_int = 29;
+    /* unsigned char cmd[2] = "\x7c\x80"; */
+    /* unsigned int power_int = (power * 30) / 255; */
+    /* if (power_int > 29) { */
+    /*     power_int = 29; */
+    /* } */
+    /* cmd[1] = 0x80 + (unsigned char)power_int; */
+    /* return display_write_raw(state, cmd, 2); */
+    return -1;
+}
+
+int display_write_text(struct State *state, const uint8_t *buf,
+                       size_t len, uint8_t write_mode) {
+    while (len > 255) {
+        display_write_text(state, buf, 255, write_mode);
+        buf += 255;
+        len -= 255;
     }
-    cmd[1] = 0x80 + (unsigned char)power_int;
-    return display_write_raw(state, cmd, 2);
+    uint8_t *newbuf = malloc(len+2);
+    newbuf[0] = write_mode;
+    newbuf[1] = len;
+    memcpy(&newbuf[2], buf, len);
+    int result = display_write_raw(state, newbuf, len+2);
+    free(newbuf);
+    return result;
 }
 
 int display_write_raw(struct State *state, const void *buf, size_t len) {
