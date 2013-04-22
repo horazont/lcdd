@@ -18,7 +18,7 @@ FB_OBJS=objs/utils.o objs/xmpp-utils.o objs/commands.o objs/display.o objs/confi
 
 
 lcdd-local: lcdd.c $(LOCAL_OBJS)
-	$(LOCC) $(CFLAGS_COUPLET_LOCAL) -lssl -lcrypto -lexpat -lresolv -lpthread -o lcdd-local lcdd.c $(LOCAL_OBJS) $(LIBS_COUPLET_LOCAL)
+	$(LOCC) $(CFLAGS_COUPLET_LOCAL) -lrt -lssl -lcrypto -lexpat -lresolv -lpthread -o lcdd-local lcdd.c $(LOCAL_OBJS) $(LIBS_COUPLET_LOCAL)
 
 lcdd: lcdd.c $(FB_OBJS)
 	$(FBCC) -o lcdd lcdd.c $(FB_OBJS) $(CFLAGS_COUPLET_FB) $(LIBS_FRITZBOX)
