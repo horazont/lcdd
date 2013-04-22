@@ -139,12 +139,11 @@ int handle_page_cycle(xmpp_conn_t *const conn, void *const userdata) {
     state->display_state.curr_page = (state->display_state.curr_page + 1) % PAGE_COUNT;
     // check_device();
     display_redraw_page(state);
-    xmpp_timed_handler_delete(conn, handle_page_cycle);
     xmpp_timed_handler_add(conn,
         state->display_state.page_cycle_handler,
         state->display_state.page_cycle_interval,
         userdata);
-    return 1;
+    return 0;
 }
 
 int handle_sensor_check(xmpp_conn_t *const conn, void *const userdata) {
