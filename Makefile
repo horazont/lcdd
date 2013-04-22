@@ -52,4 +52,3 @@ objs/config-local.o: config.c config.h common.h
 
 objs/config.o: config.c config.h common.h
 	$(FBCC) -c -o $@ config.c
-
