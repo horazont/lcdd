@@ -108,7 +108,7 @@ int display_write_raw(struct State *state, const void *buf, size_t len) {
     int written = write(state->serial_state.fd, buf, len);
     while (written < len) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            written += write(state->serial_state.fd, buf, len);
+            written += write(state->serial_state.fd, buf+written, len);
         } else {
             display_close(state);
             return errno;
