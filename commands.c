@@ -69,6 +69,7 @@ void cmd_update_page(struct State *state,
     unsigned char *page = state->display_state.pages[page_index];
     display_clear_page(state, page_index);
     memmove(page, decoded, pagelen);
+    free(decoded);
 }
 
 void cmd_get_resource_use(struct State *state,

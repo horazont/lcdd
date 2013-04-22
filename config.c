@@ -111,6 +111,8 @@ void config_burn(struct Config *obj) {
         free(obj->pass);
     if (obj->ping_peer)
         free(obj->ping_peer);
+    if (obj->serial_file)
+        free(obj->serial_file);
 }
 
 void config_free(struct Config *obj) {
