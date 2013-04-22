@@ -11,7 +11,7 @@
 #include <errno.h>
 #include <stdint.h>
 
-#include "couplet.h"
+#include <libcouplet/couplet.h>
 
 #include "common.h"
 #include "config.h"

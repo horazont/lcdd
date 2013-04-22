@@ -4,6 +4,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include <libcouplet/parser.h>
+
 #define CONFIG_CHUNK_SIZE 1024
 
 struct Config* config_new() {

@@ -1,7 +1,7 @@
 #include "xmpp-utils.h"
 
 #include "utils.h"
-#include "couplet.h"
+#include <libcouplet/couplet.h>
 
 void set_presence(struct XMPPState *state, int new_status, const char *msg)
 {

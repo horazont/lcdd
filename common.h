@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "couplet.h"
+#include <libcouplet/couplet.h>
 
 #define PAGE_COUNT 3
 #define PAGE_SIZE 20*4

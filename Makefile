@@ -5,8 +5,8 @@ LIBS_FRITZBOX=$(LIBS_COUPLET_FB) ../fritzbox-libs/libssl.so ../fritzbox-libs/lib
 
 LD_LOCAL=
 
-CFLAGS_COUPLET_FB=-I../libcouplet/
-CFLAGS_COUPLET_LOCAL=-I../libcouplet-local/
+CFLAGS_COUPLET_FB=-I../libcouplet/include/
+CFLAGS_COUPLET_LOCAL=-I../libcouplet-local/include/
 
 CFLAGS=-Wall -Werror -std=gnu99
 
