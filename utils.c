@@ -27,6 +27,25 @@ char hex(uint8_t nibble)
     return map[nibble];
 }
 
+void hexbyte(uint8_t byte, char dest[2])
+{
+    dest[0] = hex((byte & 0xF0) >> 4);
+    dest[1] = hex(byte & 0x0F);
+}
+
+void print_hex(const uint8_t *buf, size_t len)
+{
+    const uint8_t *cur = buf;
+    const uint8_t *end = buf + len;
+    char hexbuf[3];
+    memset(hexbuf, 0, sizeof(hexbuf));
+    while (cur < end) {
+        hexbyte(*cur, hexbuf);
+        printf("%s", hexbuf);
+        cur++;
+    }
+}
+
 int decode_hex(unsigned char *outbuf, const unsigned char *buffer, int len)
 {
     unsigned char *out = outbuf;
@@ -58,11 +77,8 @@ void encode_hex(char *outbuf, const unsigned char *buffer, int len)
     const unsigned char *in = buffer;
     const unsigned char *ein = &buffer[len];
     while (in < ein) {
-        uint8_t value = *in;
-        *out = hex((value & 0xF0) >> 8);
-        out++;
-        *out = hex(value & 0xF);
-        out++;
+        hexbyte(*in, out);
+        out += 2;
         in++;
     }
 }
