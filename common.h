@@ -7,7 +7,7 @@
 
 #define PAGE_COUNT 3
 #define PAGE_SIZE 20*4
-#define SENSOR_COUNT 1
+#define SENSOR_COUNT 5
 
 struct XMPPState {
     xmpp_conn_t *conn;
