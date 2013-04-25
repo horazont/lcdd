@@ -279,13 +279,26 @@ void cmd_read_sensors(struct State *state,
     char *msg = malloc(1024);
 
     for (int i = 0; i < SENSOR_COUNT; i++) {
+        if (i > 0) {
+            msg = appendf(msg, &offset, &bufsize,
+                          "\n");
+        }
         msg = appendf(msg, &offset, &bufsize,
-                      "s%d", i);
+                      "%d: ", i);
 
         struct SensorState *sensor = &state->sensors[i];
         if (sensor->known) {
             msg = appendf(msg, &offset, &bufsize,
-                          " v%d", sensor->value);
+                          " id=%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x value=%d",
+                          sensor->addr[0],
+                          sensor->addr[1],
+                          sensor->addr[2],
+                          sensor->addr[3],
+                          sensor->addr[4],
+                          sensor->addr[5],
+                          sensor->addr[6],
+                          sensor->addr[7],
+                          sensor->value);
         } else {
             msg = appendf(msg, &offset, &bufsize,
                           " ???");
