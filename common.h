@@ -56,4 +56,10 @@ struct State {
     int terminated;
 };
 
+struct SensorOnTheWire {
+    uint8_t id;
+    uint8_t addr[8];
+    uint8_t value[2];
+};
+
 #endif

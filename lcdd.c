@@ -152,24 +152,29 @@ int handle_sensor_check(xmpp_conn_t *const conn, void *const userdata) {
     fd.fd = state->serial_state.fd;
     fd.events = POLLIN;
 
+    struct SensorOnTheWire raw;
+
     while (poll(&fd, 1, 0) == 1) {
         if ((fd.revents & POLLIN) == POLLIN) {
-            uint8_t sensor_id = 255;
-            uint8_t value[2];
+            memset(&raw, 0, sizeof(raw));
+            raw.id = 0xff;
 
-            read(fd.fd, &sensor_id, 1);
-            if (sensor_id >= SENSOR_COUNT) {
+            if (block_read(fd.fd, &raw, sizeof(raw)) < sizeof(raw)) {
+                debug_msg("block_read for sensor data interrupted early.\n");
+                return 1;
+            }
+            if (raw.id >= SENSOR_COUNT) {
+                fprintf(stderr, "DEBUG: sensor id out of bounds: %d\n", raw.id);
+                fflush(stderr);
                 return 1;
             }
 
-            read(fd.fd, state->sensors[sensor_id].addr, 8);
-            read(fd.fd, value, 2);
-
             uint16_t value_int = 0;
-            value_int |= ((uint16_t)value[1] << 8) & 0xFF00;
-            value_int |= ((uint16_t)value[0]) & 0xFF;
-            state->sensors[sensor_id].known = 1;
-            state->sensors[sensor_id].value = (int16_t)value_int;
+            value_int |= ((uint16_t)raw.value[1] << 8) & 0xFF00;
+            value_int |= ((uint16_t)raw.value[0]) & 0xFF;
+            state->sensors[raw.id].known = 1;
+            memcpy(state->sensors[raw.id].addr, raw.addr, sizeof(raw.addr));
+            state->sensors[raw.id].value = (int16_t)value_int;
         }
     }
     return 1;
@@ -500,6 +505,8 @@ void assert_config(char *ptr, const char *name)
 }
 
 int main(int argc, char **argv) {
+    assert(sizeof(struct SensorOnTheWire) == 11);
+
     struct State state;
     terminated = &state.terminated;
     signal_state = &state.xmpp_state;
