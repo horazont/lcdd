@@ -1,7 +1,9 @@
 #include "utils.h"
 
+#include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 unsigned char unhex(unsigned char hex)
 {
