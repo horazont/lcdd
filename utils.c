@@ -5,6 +5,8 @@
 #include <assert.h>
 #include <string.h>
 
+/* #define DEBUG_READ */
+
 unsigned char unhex(unsigned char hex)
 {
     if (hex >= 48 && hex <= 58) {
@@ -146,4 +148,35 @@ char *appendf(char *buffer, int *offset, int *size, const char *fmt, ...)
     va_end(args);
 
     return buffer;
+}
+
+ssize_t block_read(int fd, void *buf, size_t count)
+{
+    uint8_t *cur = buf;
+    uint8_t *end = cur + count;
+
+#ifdef DEBUG_READ
+    printf("block_read(%d, <buffer@0x%lx>, %lu)\n  <buffer> <- X'",
+           fd, (size_t)buf, count);
+#endif
+
+    while (cur < end) {
+        ssize_t read_bytes = read(fd, cur, end - cur);
+        if (read_bytes < 0) {
+            printf("' !error");
+            break;
+        }
+#ifdef DEBUG_READ
+        print_hex(cur, read_bytes);
+#endif
+        cur += read_bytes;
+    }
+#ifdef DEBUG_READ
+    if (cur == end) {
+        printf("' success.");
+    }
+    printf("\n");
+#endif
+
+    return count - (end - cur);
 }
