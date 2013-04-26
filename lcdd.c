@@ -163,6 +163,16 @@ int handle_sensor_check(xmpp_conn_t *const conn, void *const userdata) {
                 debug_msg("block_read for sensor data interrupted early.\n");
                 return 1;
             }
+
+            uint8_t checksum = adler8ish((const uint8_t*)&raw, sizeof(raw)-sizeof(uint8_t));
+            if (checksum != raw.checksum) {
+                debug_msg("Checksum mismatch in sensor data, attempting resync.\n");
+                fprintf(stderr, "got = %d; expected = %d\n", raw.checksum, checksum);
+                fflush(stderr);
+                display_resync(state);
+                return 1;
+            }
+
             if (raw.id >= SENSOR_COUNT) {
                 fprintf(stderr, "DEBUG: sensor id out of bounds: %d\n", raw.id);
                 fflush(stderr);
@@ -505,7 +515,7 @@ void assert_config(char *ptr, const char *name)
 }
 
 int main(int argc, char **argv) {
-    assert(sizeof(struct SensorOnTheWire) == 11);
+    assert(sizeof(struct SensorOnTheWire) == 12);
 
     struct State state;
     terminated = &state.terminated;
