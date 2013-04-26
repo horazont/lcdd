@@ -150,6 +150,19 @@ char *appendf(char *buffer, int *offset, int *size, const char *fmt, ...)
     return buffer;
 }
 
+uint8_t adler8ish(const uint8_t *data, size_t len)
+{
+    uint16_t A = 1, B = 0;
+    for (int i = 0; i < len; i++) {
+        A += data[i];
+        B += A;
+    }
+    A = A % 13;
+    B = B % 13;
+
+    return (A << 4) | B;
+}
+
 ssize_t block_read(int fd, void *buf, size_t count)
 {
     uint8_t *cur = buf;

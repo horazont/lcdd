@@ -13,6 +13,8 @@ char *vawesomef(const char *message, va_list args, size_t *length);
 char *awesomef(const char *fmt, ...);
 char *appendf(char *buffer, int *offset, int *size, const char *fmt, ...);
 
+uint8_t adler8ish(const uint8_t *buffer, size_t len);
+
 ssize_t block_read(int fd, void *buf, size_t count);
 
 #endif
