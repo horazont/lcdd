@@ -6,6 +6,7 @@
 static const uint8_t DISPLAY_CMD_CLEAR = 0x00;
 static const uint8_t DISPLAY_CMD_WRITE_RAW = 0x01;
 static const uint8_t DISPLAY_CMD_WRITE_PAGE = 0x02;
+static const uint8_t DISPLAY_CMD_RESYNC = 0x03;
 
 /**
  * Open the display serial port if neccessary.
@@ -43,6 +44,11 @@ void display_clear_page(struct State *state, int page_index);
  * overdraw anything written by display_write_raw or cycle pages.
  */
 int display_redraw_page(struct State *state);
+
+/**
+ * Issue a resync command to resynchronize the serial line.
+ */
+int display_resync(struct State *state);
 
 /**
  * Send the given text buffer to the display.

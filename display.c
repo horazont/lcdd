@@ -8,6 +8,9 @@
 #include <termios.h>
 #include <string.h>
 #include <stdlib.h>
+#include <poll.h>
+
+/* #define DEBUG_RESYNC */
 
 int display_write_raw(struct State *state, const void *buf, size_t len);
 
@@ -70,6 +73,126 @@ int display_redraw_page(struct State *state) {
 
     unsigned char *page = state->display_state.pages[state->display_state.curr_page];
     return display_write_text(state, page, PAGE_SIZE, DISPLAY_CMD_WRITE_PAGE);
+}
+
+int display_resync(struct State *state) {
+    if (display_open(state) != 0) {
+        return -1;
+    }
+
+    const int fd = state->serial_state.fd;
+    static const int RESYNC_TIMEOUT = 100;
+
+    struct pollfd pollfd;
+    pollfd.fd = fd;
+    pollfd.events = POLLIN | POLLERR;
+
+    int success = 0;
+
+#ifdef DEBUG_RESYNC
+    fprintf(stderr, "DEBUG: resyncing...\n");
+#endif
+
+    for (int attempt = 0; attempt < 3; attempt++) {
+
+#ifdef DEBUG_RESYNC
+        fprintf(stderr, "DEBUG: resync: attempt=%d, bytes: ", attempt+1);
+        fflush(stderr);
+#endif
+
+        int err = display_write_raw(state, &DISPLAY_CMD_RESYNC, 1);
+        if (err != 0) {
+            return err;
+        }
+
+        uint8_t buf = 0xaa;
+
+        int consecutive = 0;
+        do {
+
+            success = 1;
+            consecutive = 0;
+
+            // we await a sequence of 0xff, at least eleven consecutive
+            // ones. So lets scroll through the input until we find
+            // one.
+
+            while (buf != 0xff) {
+                if (poll(&pollfd, 1, RESYNC_TIMEOUT) == 0) {
+#ifdef DEBUG_RESYNC
+                    fprintf(stderr, "\nDEBUG: resync: timeout during read");
+                    fflush(stderr);
+#endif
+                    success = 0;
+                    break;
+                }
+                if (read(fd, &buf, 1) != 1) {
+#ifdef DEBUG_RESYNC
+                    fprintf(stderr, "\nDEBUG: resync: error (%d: %s) during read", errno, strerror(errno));
+                    fflush(stderr);
+#endif
+                    display_close(state);
+                    return -1;
+                }
+#ifdef DEBUG_RESYNC
+                fprintf(stderr, "%.2x", buf);
+                fflush(stderr);
+#endif
+            }
+
+            if (!success) {
+                break;
+            }
+
+            // now we see whether we find eleven consecutive 0xff --
+            // these should not appear in real data.
+
+            while (buf == 0xff) {
+                consecutive += 1;
+                if (poll(&pollfd, 1, RESYNC_TIMEOUT) == 0) {
+#ifdef DEBUG_RESYNC
+                    fprintf(stderr, "\nDEBUG: resync: timeout during read");
+                    fflush(stderr);
+#endif
+                    success = 0;
+                    break;
+                }
+                if (read(fd, &buf, 1) != 1) {
+#ifdef DEBUG_RESYNC
+                    fprintf(stderr, "\nDEBUG: resync: error (%d: %s) during read", errno, strerror(errno));
+                    fflush(stderr);
+#endif
+                    display_close(state);
+                    return -1;
+                }
+#ifdef DEBUG_RESYNC
+                fprintf(stderr, "%.2x", buf);
+                fflush(stderr);
+#endif
+            }
+
+        } while ((consecutive < 11) && (success));
+
+#ifdef DEBUG_RESYNC
+        fprintf(stderr, "\n");
+#endif
+
+        if ((buf == 0x00) && (success)) {
+#ifdef DEBUG_RESYNC
+            fprintf(stderr, "DEBUG: resync: success\n");
+            fflush(stderr);
+#endif
+            // successful, exit attempt loop
+            success = 1;
+            break;
+        }
+    }
+
+    if (success) {
+        return 0;
+    } else {
+        return -1;
+    }
 }
 
 int display_set_backlight_power(struct State *state, unsigned char power) {
