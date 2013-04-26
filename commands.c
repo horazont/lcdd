@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "common.h"
 #include "utils.h"
@@ -311,6 +312,23 @@ void cmd_read_sensors(struct State *state,
     free(msg);
 }
 
+void cmd_resync(struct State *state, xmpp_stanza_t *const orig, const char *command_args)
+{
+    debug_msg("resync requested via xmpp...\n");
+    if (display_resync(state) != 0) {
+        reply_text(&state->xmpp_state, orig, "Resync failed: errno = %d", errno);
+    }
+}
+
+void cmd_desync(struct State *state, xmpp_stanza_t *const orig, const char *command_args)
+{
+    const int fd = state->serial_state.fd;
+    if (fd >= 0) {
+        uint8_t buf = 0;
+        read(fd, &buf, 1);
+    }
+}
+
 void cmd_list(struct State *state, xmpp_stanza_t *const orig, const char *command_args);
 
 const struct Command commands[] = {
@@ -326,6 +344,8 @@ const struct Command commands[] = {
     {"list", cmd_list},
     {"set backlight", cmd_set_backlight},
     {"read sensors", cmd_read_sensors},
+    {"resync", cmd_resync},
+    {"desync", cmd_desync},
     {NULL, NULL},
 };
 
