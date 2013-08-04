@@ -4,8 +4,11 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <poll.h>
 
 /* #define DEBUG_READ */
+
+#define READ_TIMEOUT 100
 
 unsigned char unhex(unsigned char hex)
 {
@@ -163,6 +166,23 @@ uint8_t adler8ish(const uint8_t *data, size_t len)
     return (A << 4) | B;
 }
 
+ssize_t safe_read(int fd, void *buf, size_t count)
+{
+    struct pollfd pollfd;
+    pollfd.fd = fd;
+    pollfd.events = POLLIN;
+
+    if (poll(&pollfd, 1, READ_TIMEOUT) == 0) {
+        return -1;
+    }
+
+    if (pollfd.revents == POLLIN) {
+        return read(fd, buf, count);
+    } else {
+        return -1;
+    }
+}
+
 ssize_t block_read(int fd, void *buf, size_t count)
 {
     uint8_t *cur = buf;
@@ -174,7 +194,7 @@ ssize_t block_read(int fd, void *buf, size_t count)
 #endif
 
     while (cur < end) {
-        ssize_t read_bytes = read(fd, cur, end - cur);
+        ssize_t read_bytes = safe_read(fd, cur, end - cur);
         if (read_bytes < 0) {
 #ifdef DEBUG_READ
             printf("' !error");
