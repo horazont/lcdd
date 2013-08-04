@@ -166,7 +166,7 @@ int handle_sensor_check(xmpp_conn_t *const conn, void *const userdata) {
 
             uint8_t checksum = adler8ish((const uint8_t*)&raw, sizeof(raw)-sizeof(uint8_t));
             if (checksum != raw.checksum) {
-                debug_msg("Checksum mismatch in sensor data, attempting resync.\n");
+                debug_msg("checksum mismatch in sensor data, attempting resync.\n");
                 fprintf(stderr, "got = %d; expected = %d\n", raw.checksum, checksum);
                 fflush(stderr);
                 display_resync(state);
