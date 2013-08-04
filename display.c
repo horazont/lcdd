@@ -42,6 +42,10 @@ int display_open(struct State *state) {
         state->serial_state.fd = -1;
         return -3;
     } else {
+        if (fcntl(fd, F_SETFL, O_NONBLOCK) != 0) {
+            fprintf(stderr, "F_SETFL: O_NONBLOCK failed: %d: %s\n", errno, strerror(errno));
+        }
+
         struct termios port_settings;
         memset(&port_settings, 0, sizeof(port_settings));
         cfsetispeed(&port_settings, B9600);
